@@ -8,10 +8,10 @@ const text = (value,name,max,required=false) => {
  if(typeof value !== 'string' || value.length>max || (required && !value.trim())) fail(400,`Check ${name}.`);
  return value.trim();
 };
-export async function boundedText(req,max=24000) {
+export async function boundedBytes(req,max=24000) {
  const declared=req.headers.get('content-length');
  if(declared!==null && (!/^\d+$/.test(declared) || Number(declared)>max)) fail(413,'Request is too large.');
- if(!req.body) return '';
+ if(!req.body) return Buffer.alloc(0);
  const reader=req.body.getReader(), chunks=[];
  let size=0;
  try{
@@ -22,7 +22,10 @@ export async function boundedText(req,max=24000) {
    chunks.push(value);
   }
  }finally{reader.releaseLock();}
- return Buffer.concat(chunks,size).toString('utf8');
+ return Buffer.concat(chunks,size);
+}
+export async function boundedText(req,max=24000) {
+ return (await boundedBytes(req,max)).toString('utf8');
 }
 async function body(req) {
  if(!(req.headers.get('content-type')||'').includes('application/json')) fail(415,'Send JSON.');
@@ -48,9 +51,9 @@ export function createApi({repo,auth,billing,originCheck=checkOrigin}) {
    const method=req.method;
    if(path==='/api/billing/webhook' && method==='POST') {
     if(!billing.configured) fail(503,'Payments are unavailable during beta.');
-    const raw=await boundedText(req,100000);
+    const raw=await boundedBytes(req,100000);
     if(!billing.verifyWebhook(raw,req.headers.get('x-razorpay-signature'))) fail(400,'Invalid webhook signature.');
-    let event; try{event=JSON.parse(raw);}catch{fail(400,'Invalid JSON.');}
+    let event; try{event=JSON.parse(raw.toString('utf8'));}catch{fail(400,'Invalid JSON.');}
     const eventId=req.headers.get('x-razorpay-event-id') || createHash('sha256').update(raw).digest('hex');
     if(!['payment.captured','refund.processed','payment.refunded'].includes(event.event)) return json({received:true,ignored:true});
     const entity=event.payload?.payment?.entity;
