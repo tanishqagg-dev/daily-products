@@ -1,8 +1,8 @@
 # Foldline
 
 Feedback, decisions and release notes for small software teams. Built as the first
-product in Tanishq's daily product pipeline. Current release status is beta until
-hosted data/authentication and live billing pass the release checks.
+product in Tanishq's daily product pipeline. Current release status is an online preview until hosted data/authentication and
+live billing pass the release checks.
 
 ## Run
 
@@ -32,7 +32,20 @@ Keys stay in encrypted provider environment settings. They never go into Vite
 variables, source code or GitHub. Checkout is disabled without live credentials.
 The webhook URL is `/api/billing/webhook`. The gateway accepts only captured,
 server-priced INR499 passes; verifies signatures; handles replay and refunds.
-A pass lasts 30 days and does not auto-renew.
+A pass lasts 30 days, applies to the owner account across its workspaces, and does not auto-renew.
+
+## Sign-in and interface
+
+The interface uses a Google-first sign-in screen when the hosted provider enables
+Google, with email sign-in as a fallback. Provider availability comes from the
+actual Identity settings. The app completes authentication callbacks before
+loading the workspace and refreshes the client session before asking the server
+for the verified account. No local demo or fixture grants a real account.
+
+The current redesign follows the user's Aestrum reference for typography, custom
+orange artwork and motion. The generated folded-ribbon illustration was traced
+into actual SVG geometry. App screens use readable controls, mobile list/detail
+navigation, guided onboarding, search and clear public/private labels.
 
 ## Verification
 
@@ -69,3 +82,12 @@ reports readiness. Production publication is handled by the audited pipeline.
 Original code and branding. No competitor code, assets or private customer data
 are reused. The first market investigation found a plausible workflow gap, not
 proven paid demand or a monopoly. The product should earn adoption through real use.
+
+## Publication requirement
+
+The pipeline publishes an immutable hosted preview first. Production promotion
+requires independent evidence of real provider sign-in and logout, persistence
+after reload, two-account isolation, the full feedback/decision/release workflow,
+CSV export, desktop/mobile UI and error states on that exact preview origin.
+Health checks and the public synthetic demo cannot satisfy this gate. See
+`tests/e2e/README.md` for the hosted workflow harness and its limits.

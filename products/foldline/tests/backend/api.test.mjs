@@ -65,6 +65,21 @@ test('unsigned webhook cannot mutate state',async()=>{
  let called=false;const api=createApi({repo:{applyPayment:()=>{called=true;}},auth:async()=>owner,billing:{...provider,verifyWebhook:()=>false}});
  assert.equal((await api(req('/api/billing/webhook','POST',{event:'payment.captured'}))).status,400);assert.equal(called,false);
 });
+test('webhook HMAC uses exact bounded wire bytes before UTF-8 decoding',async()=>{
+ const secret='short-unit-key';
+ const canonical=Buffer.from('{"event":"unhandled.test","text":"\uFFFD"}','utf8');
+ const index=canonical.indexOf(Buffer.from('\uFFFD'));
+ const altered=Buffer.concat([canonical.subarray(0,index),Buffer.from([0xff]),canonical.subarray(index+3)]);
+ assert.equal(canonical.toString('utf8'),altered.toString('utf8'));
+ const signature=createHmac('sha256',secret).update(canonical).digest('hex');
+ let seenRaw;
+ const api=createApi({repo:{},auth:async()=>null,billing:{...provider,verifyWebhook:(raw,sig)=>{seenRaw=raw;return validSignature(raw,sig,secret);}}});
+ const request=wire=>new Request(base+'/api/billing/webhook',{method:'POST',headers:{'content-type':'application/json','x-razorpay-signature':signature},body:wire});
+ assert.equal((await api(request(canonical))).status,200);
+ assert.equal(Buffer.isBuffer(seenRaw),true);assert.deepEqual(seenRaw,canonical);
+ assert.equal((await api(request(altered))).status,400);
+ assert.deepEqual(seenRaw,altered);
+});
 test('public submission response omits evidence and internal decisions',async()=>{
  const api=createApi({repo:{addRequest:async()=>({id:'r',title:'Please fix',status:'inbox',createdAt:'today',problem:'private context',reason:'internal'})},auth:async()=>null,billing:provider});
  const response=await api(req('/api/public/board/requests','POST',{title:'Please fix',problem:'private context'}));
