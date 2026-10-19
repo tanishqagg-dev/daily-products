@@ -4,7 +4,7 @@ import {statusLabels} from './api.js';
 
 export function Logo({small=false}) {
   return <a href="/" className={`logo ${small?'small':''}`} aria-label="Foldline home">
-    <svg width="34" height="34" viewBox="0 0 40 40" fill="none" aria-hidden="true"><path d="M5 31V9h29L20 23H11M20 23v8h14" stroke="currentColor" strokeWidth="3.2" strokeLinejoin="round"/><path d="m20 23 14-14v22" stroke="currentColor" strokeWidth="1.4"/></svg>
+    <img src="/brand/foldline-mark.svg" width="34" height="34" alt="" aria-hidden="true"/>
     <span>foldline<span className="logo-stop">.</span></span>
   </a>;
 }
